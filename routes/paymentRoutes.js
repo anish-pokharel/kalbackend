@@ -196,7 +196,7 @@ const Booking = require('../models/bookingModel');
 // const express = require('express');
 // const axios = require('axios');
 // const router = express.Router();
-const { verifyToken, isAuthenticated } = require('../middleware'); // Import middleware
+const { verifyToken, isAuthenticated } = require('../authMiddleware'); // Import middleware
 // const Booking = require('../models/bookingModel');
 
 // Khalti payment initiation

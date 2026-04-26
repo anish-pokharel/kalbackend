@@ -3,7 +3,7 @@ const router = express.Router();
 const Customer = require('../models/customerModel');
 const User = require('../models/userModel');
 const Booking = require('../models/bookingModel');
-const { verifyToken, isAdmin } = require('../middleware');
+const { verifyToken, isAdmin } = require('../authMiddleware');
 
 // ==================== ADMIN CUSTOMER ENDPOINTS ====================
 

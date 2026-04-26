@@ -4,7 +4,7 @@ const Bus = require('../models/busModel');
 const Route = require('../models/routesModel');
 const Fare = require('../models/fareModel');
 const User = require('../models/userModel');
-const { verifyToken, isAdmin } = require('../middleware');
+const { verifyToken, isAdmin } = require('../authMiddleware');
 
 // ==================== PUBLIC ENDPOINTS ====================
 

@@ -3,7 +3,7 @@ const router = express.Router();
 const BoardingPoint = require('../models/boardingPointModel');
 const Bus = require('../models/busModel');
 const User = require('../models/userModel');
-const { verifyToken, isAdmin } = require('../middleware');
+const { verifyToken, isAdmin } = require('../authMiddleware');
 
 // ==================== ADMIN ENDPOINTS ====================
 

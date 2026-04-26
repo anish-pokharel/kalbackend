@@ -3,7 +3,7 @@ const router = express.Router();
 const Fare = require('../models/fareModel');
 const Route = require('../models/routesModel');
 const User = require('../models/userModel');
-const { verifyToken, isAdmin } = require('../middleware');
+const { verifyToken, isAdmin } = require('../authMiddleware');
 
 // Get all routes for dropdown (admin only)
 router.get('/routes-list', verifyToken, isAdmin, async (req, res) => {

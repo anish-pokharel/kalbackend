@@ -800,7 +800,7 @@ const router = express.Router();
 const User = require('../models/userModel');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const { verifyToken, isAdmin } = require('../middleware');
+const { verifyToken, isAdmin } = require('../authMiddleware');
 
 // Login
 router.post('/login', async (req, res) => {

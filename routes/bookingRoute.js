@@ -938,7 +938,7 @@ const Booking = require('../models/bookingModel');
 const Bus = require('../models/busModel');
 const Seat = require('../models/seat');
 const Route = require('../models/routesModel');
-const { verifyToken, isAdmin } = require('../middleware');
+const { verifyToken, isAdmin } = require('../authMiddleware');
 
 // ============= CREATE BOOKING =============
 router.post('/', verifyToken, async (req, res) => {

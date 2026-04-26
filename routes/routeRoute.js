@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Route = require('../models/routesModel');
 const User = require('../models/userModel');
-const { verifyToken, isAdmin } = require('../middleware');
+const { verifyToken, isAdmin } = require('../authMiddleware');
 
 // ==================== PUBLIC ENDPOINTS ====================
 
