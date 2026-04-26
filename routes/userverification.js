@@ -30,13 +30,13 @@ async function sendVerificationEmail(user) {
         'secretKey',
         { expiresIn: '1h' }
     );
-    
+
     // IMPORTANT: Use the correct URL with /api/auth prefix
     // const verificationUrl = `http://localhost:3000/api/auth/verify-signup?token=${token}`;
-        const verificationUrl = `https://kalbackend-pnop.vercel.app/api/auth/verify-signup?token=${token}`;
+    const verificationUrl = `https://kalbackend-pnop.vercel.app/api/auth/verify-signup?token=${token}`;
 
     console.log('Generated verification URL:', verificationUrl); // For debugging
-    
+
     const mailOptions = {
         from: '"Travel Agency" <karthikpokharel@gmail.com>',
         to: user.email,
@@ -87,7 +87,7 @@ async function sendVerificationEmail(user) {
             </html>
         `
     };
-    
+
     try {
         const info = await transporter.sendMail(mailOptions);
         console.log('✅ Verification email sent successfully to:', user.email);
@@ -106,17 +106,17 @@ router.post('/signupUser', async (req, res) => {
 
         // Validate required fields
         if (!firstName || !lastName || !email || !password || !confirmPassword) {
-            return res.status(400).json({ 
+            return res.status(400).json({
                 success: false,
-                message: 'Please fill all required fields' 
+                message: 'Please fill all required fields'
             });
         }
 
         // Check if passwords match
         if (password !== confirmPassword) {
-            return res.status(400).json({ 
+            return res.status(400).json({
                 success: false,
-                message: 'Passwords do not match' 
+                message: 'Passwords do not match'
             });
         }
 
@@ -124,9 +124,9 @@ router.post('/signupUser', async (req, res) => {
         const existingUser = await User.findOne({ email });
 
         if (existingUser && existingUser.isVerified) {
-            return res.status(409).json({ 
+            return res.status(409).json({
                 success: false,
-                message: 'Email already registered' 
+                message: 'Email already registered'
             });
         }
 
@@ -145,21 +145,21 @@ router.post('/signupUser', async (req, res) => {
             existingUser.termCondition = termCondition;
             existingUser.role = role || "customer";
             existingUser.registeredDate = new Date().toLocaleDateString();
-            
+
             await existingUser.save();
 
             const emailSent = await sendVerificationEmail(existingUser);
-            
+
             if (emailSent) {
-                return res.status(200).json({ 
+                return res.status(200).json({
                     success: true,
                     message: 'Registration updated. Please check your email to verify your account',
-                    needsVerification: true 
+                    needsVerification: true
                 });
             } else {
-                return res.status(500).json({ 
+                return res.status(500).json({
                     success: false,
-                    message: 'Failed to send verification email. Please try again.' 
+                    message: 'Failed to send verification email. Please try again.'
                 });
             }
         }
@@ -181,30 +181,30 @@ router.post('/signupUser', async (req, res) => {
         });
 
         await newUser.save();
-        
+
         const emailSent = await sendVerificationEmail(newUser);
 
         if (emailSent) {
-            return res.status(201).json({ 
+            return res.status(201).json({
                 success: true,
                 message: 'Registration successful. Please check your email to verify your account',
-                needsVerification: true 
+                needsVerification: true
             });
         } else {
             // Delete the user if email failed
             await User.findByIdAndDelete(newUser._id);
-            return res.status(500).json({ 
+            return res.status(500).json({
                 success: false,
-                message: 'Failed to send verification email. Please try again.' 
+                message: 'Failed to send verification email. Please try again.'
             });
         }
 
     } catch (error) {
         console.error('Signup error:', error);
-        return res.status(500).json({ 
+        return res.status(500).json({
             success: false,
-            message: 'Something went wrong', 
-            error: error.message 
+            message: 'Something went wrong',
+            error: error.message
         });
     }
 });
@@ -215,9 +215,9 @@ router.get('/verify-signup', async (req, res) => {
         const { token } = req.query;
 
         if (!token) {
-            return res.status(400).json({ 
+            return res.status(400).json({
                 success: false,
-                message: 'No verification token provided' 
+                message: 'No verification token provided'
             });
         }
 
@@ -228,9 +228,9 @@ router.get('/verify-signup', async (req, res) => {
             decoded = jwt.verify(token, 'secretKey');
         } catch (err) {
             console.error('Token verification failed:', err.message);
-            return res.status(400).json({ 
+            return res.status(400).json({
                 success: false,
-                message: 'Verification link expired or invalid' 
+                message: 'Verification link expired or invalid'
             });
         }
 
@@ -239,9 +239,9 @@ router.get('/verify-signup', async (req, res) => {
         const user = await User.findOne({ email: decoded.email });
 
         if (!user) {
-            return res.status(404).json({ 
+            return res.status(404).json({
                 success: false,
-                message: 'User not found' 
+                message: 'User not found'
             });
         }
 
@@ -252,20 +252,25 @@ router.get('/verify-signup', async (req, res) => {
 
         user.isVerified = true;
         await user.save();
-        
+
         console.log('✅ Email verified successfully for:', user.email);
-        
+
         // Redirect to frontend login page with success message
-        return res.redirect('http://localhost:4200/login?verified=true');
-        
+        // return res.redirect('http://localhost:4200/login?verified=true');
+        return res.redirect('https://kalikayatat.netlify.app/login?registered=true');
+        // 
+
     } catch (error) {
         console.error('Verification error:', error);
-        return res.status(500).json({ 
+        return res.status(500).json({
             success: false,
-            message: 'Something went wrong', 
-            error: error.message 
+            message: 'Something went wrong',
+            error: error.message
         });
     }
 });
 
 module.exports = router;
+
+
+// https://kalikayatat.netlify.app/login?registered=true
