@@ -795,6 +795,185 @@
 
 
 
+// const express = require("express");
+// const router = express.Router();
+// const User = require('../models/userModel');
+// const bcrypt = require('bcrypt');
+// const jwt = require('jsonwebtoken');
+// const { verifyToken, isAdmin } = require('../authMiddleware');
+
+// // Login
+// router.post('/login', async (req, res) => {
+//     try {
+//         const { email, password } = req.body;
+
+//         if (!email || !password) {
+//             return res.status(400).json({ 
+//                 success: false,
+//                 message: 'Email and password are required' 
+//             });
+//         }
+
+//         const userData = await User.findOne({ email });
+        
+//         if (!userData) {
+//             return res.status(401).json({ 
+//                 success: false,
+//                 message: 'Invalid email or password' 
+//             });
+//         }
+        
+//         if (!userData.isVerified) {
+//             return res.status(401).json({ 
+//                 success: false,
+//                 message: 'Please verify your email before logging in',
+//                 needsVerification: true,
+//                 email: userData.email 
+//             });
+//         }
+        
+//         const isPasswordValid = await bcrypt.compare(password, userData.password);
+        
+//         if (!isPasswordValid) {
+//             return res.status(401).json({ 
+//                 success: false,
+//                 message: 'Invalid email or password' 
+//             });
+//         }
+        
+//         // Generate token with role included
+//         const token = jwt.sign(
+//             { 
+//                 email: userData.email, 
+//                 userId: userData._id, 
+//                 firstName: userData.firstName, 
+//                 lastName: userData.lastName,
+//                 role: userData.role 
+//             }, 
+//             'secretKey',
+//             { expiresIn: '24h' }
+//         );
+        
+//         const userResponse = {
+//             id: userData._id,
+//             email: userData.email,
+//             firstName: userData.firstName,
+//             lastName: userData.lastName,
+//             role: userData.role,
+//             isVerified: userData.isVerified
+//         };
+        
+//         res.json({ 
+//             success: true,
+//             message: 'Login successful', 
+//             user: userResponse, 
+//             token: token 
+//         });
+        
+//     } catch (error) {
+//         console.error('Login error:', error);
+//         res.status(500).json({ 
+//             success: false,
+//             message: 'Something went wrong', 
+//             error: error.message 
+//         });
+//     }
+// });
+
+// // Get all users (admin only)
+// router.get('/users', verifyToken, isAdmin, async (req, res) => {
+//     try {
+//         const users = await User.find().select('-password -confirmPassword -__v');
+        
+//         res.json({ 
+//             success: true,
+//             data: users 
+//         });
+        
+//     } catch (error) {
+//         console.error('Get users error:', error);
+//         res.status(500).json({ 
+//             success: false,
+//             message: 'Error fetching users', 
+//             error: error.message 
+//         });
+//     }
+// });
+
+// // Get user by email (protected)
+// router.get('/user', verifyToken, async (req, res) => {
+//     try {
+//         const { email } = req.user;
+//         const userData = await User.findOne({ email }).select('-password -confirmPassword -__v');
+        
+//         if (userData) {
+//             res.json({ 
+//                 success: true,
+//                 data: userData 
+//             });
+//         } else {
+//             res.status(404).json({ 
+//                 success: false,
+//                 message: "User not found" 
+//             });
+//         }
+//     } catch (error) {
+//         console.error('Get user error:', error);
+//         res.status(500).json({ 
+//             success: false,
+//             message: 'Something went wrong', 
+//             error: error.message 
+//         });
+//     }
+// });
+
+// // Verify token (protected)
+// router.get('/verify', verifyToken, async (req, res) => {
+//     try {
+//         const user = await User.findOne({ email: req.user.email }).select('-password -confirmPassword -__v');
+        
+//         if (!user) {
+//             return res.status(404).json({ 
+//                 success: false,
+//                 valid: false, 
+//                 message: 'User not found' 
+//             });
+//         }
+        
+//         res.json({ 
+//             success: true,
+//             valid: true, 
+//             user: {
+//                 id: user._id,
+//                 email: user.email,
+//                 firstName: user.firstName,
+//                 lastName: user.lastName,
+//                 role: user.role,
+//                 isVerified: user.isVerified
+//             }
+//         });
+//     } catch (error) {
+//         console.error('Verify token error:', error);
+//         res.status(500).json({ 
+//             success: false,
+//             valid: false, 
+//             message: error.message 
+//         });
+//     }
+// });
+
+// // Logout
+// router.post('/logout', verifyToken, (req, res) => {
+//     res.json({ 
+//         success: true,
+//         message: 'Logged out successfully' 
+//     });
+// });
+
+// module.exports = router;
+
+
+
 const express = require("express");
 const router = express.Router();
 const User = require('../models/userModel');
@@ -850,8 +1029,8 @@ router.post('/login', async (req, res) => {
                 lastName: userData.lastName,
                 role: userData.role 
             }, 
-            'secretKey',
-            { expiresIn: '24h' }
+            process.env.JWT_SECRET || 'secretKey',
+            { expiresIn: process.env.JWT_EXPIRE || '24h' }
         );
         
         const userResponse = {
@@ -880,10 +1059,100 @@ router.post('/login', async (req, res) => {
     }
 });
 
+// Register route (add this if missing)
+router.post('/register', async (req, res) => {
+    try {
+        const { firstName, lastName, email, password, confirmPassword, phoneNo, mobileNo, address } = req.body;
+
+        // Validate required fields
+        if (!firstName || !lastName || !email || !password || !confirmPassword) {
+            return res.status(400).json({
+                success: false,
+                message: 'Please provide all required fields'
+            });
+        }
+
+        // Check if passwords match
+        if (password !== confirmPassword) {
+            return res.status(400).json({
+                success: false,
+                message: 'Passwords do not match'
+            });
+        }
+
+        // Check if user already exists
+        const existingUser = await User.findOne({ email });
+        if (existingUser) {
+            return res.status(400).json({
+                success: false,
+                message: 'User already exists with this email'
+            });
+        }
+
+        // Hash password
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
+
+        // Create user
+        const user = new User({
+            firstName,
+            lastName,
+            email: email.toLowerCase(),
+            password: hashedPassword,
+            phoneNo: phoneNo || '',
+            mobileNo: mobileNo || '',
+            address: address || '',
+            termCondition: true,
+            role: 'customer',
+            isVerified: true, // Set to false if email verification is required
+            registeredDate: new Date().toISOString()
+        });
+
+        await user.save();
+
+        // Generate token
+        const token = jwt.sign(
+            { 
+                email: user.email, 
+                userId: user._id, 
+                firstName: user.firstName, 
+                lastName: user.lastName,
+                role: user.role 
+            }, 
+            process.env.JWT_SECRET || 'secretKey',
+            { expiresIn: process.env.JWT_EXPIRE || '24h' }
+        );
+
+        const userResponse = {
+            id: user._id,
+            email: user.email,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            role: user.role,
+            isVerified: user.isVerified
+        };
+
+        res.status(201).json({
+            success: true,
+            message: 'Registration successful',
+            user: userResponse,
+            token: token
+        });
+
+    } catch (error) {
+        console.error('Registration error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error during registration',
+            error: error.message
+        });
+    }
+});
+
 // Get all users (admin only)
 router.get('/users', verifyToken, isAdmin, async (req, res) => {
     try {
-        const users = await User.find().select('-password -confirmPassword -__v');
+        const users = await User.find().select('-password -__v');
         
         res.json({ 
             success: true,
@@ -904,7 +1173,7 @@ router.get('/users', verifyToken, isAdmin, async (req, res) => {
 router.get('/user', verifyToken, async (req, res) => {
     try {
         const { email } = req.user;
-        const userData = await User.findOne({ email }).select('-password -confirmPassword -__v');
+        const userData = await User.findOne({ email }).select('-password -__v');
         
         if (userData) {
             res.json({ 
@@ -930,7 +1199,7 @@ router.get('/user', verifyToken, async (req, res) => {
 // Verify token (protected)
 router.get('/verify', verifyToken, async (req, res) => {
     try {
-        const user = await User.findOne({ email: req.user.email }).select('-password -confirmPassword -__v');
+        const user = await User.findOne({ email: req.user.email }).select('-password -__v');
         
         if (!user) {
             return res.status(404).json({ 

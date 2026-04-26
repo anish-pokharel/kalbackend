@@ -16,17 +16,39 @@
 //     console.log("error ",error);
 // })
 
+// const mongoose = require('mongoose');
+
+// const connectDb = async () => {
+//     try {
+//         await mongoose.connect("mongodb+srv://anish:anish@cluster0.xuf0z19.mongodb.net/travelBus", {
+//             useNewUrlParser: true,
+//             useUnifiedTopology: true
+//         });
+//         console.log('MongoDB connected successfully');
+//     } catch (error) {
+//         console.error('MongoDB connection error:', error);
+//         process.exit(1);
+//     }
+// };
+
+// module.exports = connectDb;
+
+
 const mongoose = require('mongoose');
+require('dotenv').config();
 
 const connectDb = async () => {
     try {
-        await mongoose.connect("mongodb+srv://anish:anish@cluster0.xuf0z19.mongodb.net/travelBus", {
+        const mongoURI = process.env.MONGODB_URI || "mongodb+srv://anish:anish@cluster0.xuf0z19.mongodb.net/travelBus";
+        
+        await mongoose.connect(mongoURI, {
             useNewUrlParser: true,
-            useUnifiedTopology: true
+            useUnifiedTopology: true,
         });
-        console.log('MongoDB connected successfully');
+        console.log('✅ MongoDB connected successfully');
+        return mongoose.connection;
     } catch (error) {
-        console.error('MongoDB connection error:', error);
+        console.error('❌ MongoDB connection error:', error);
         process.exit(1);
     }
 };
