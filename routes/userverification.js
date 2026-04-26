@@ -32,8 +32,9 @@ async function sendVerificationEmail(user) {
     );
     
     // IMPORTANT: Use the correct URL with /api/auth prefix
-    const verificationUrl = `http://localhost:3000/api/auth/verify-signup?token=${token}`;
-    
+    // const verificationUrl = `http://localhost:3000/api/auth/verify-signup?token=${token}`;
+        const verificationUrl = `https://kalbackend-pnop.vercel.app/api/auth/verify-signup?token=${token}`;
+
     console.log('Generated verification URL:', verificationUrl); // For debugging
     
     const mailOptions = {
