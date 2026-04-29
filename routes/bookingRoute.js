@@ -577,6 +577,133 @@ const Seat = require('../models/seat');
 const Route = require('../models/routesModel');
 const { verifyToken, isAdmin } = require('../authMiddleware');
 
+// ============= SEARCH BUSES (For Counter Booking) =============
+router.post('/search-buses', async (req, res) => {
+    try {
+        const { source, destination, travelDate } = req.body;
+        
+        console.log('🔍 Searching buses:', { source, destination, travelDate });
+        
+        if (!source || !destination || !travelDate) {
+            return res.status(400).json({
+                success: false,
+                message: 'Source, destination and travel date are required'
+            });
+        }
+        
+        // Find routes matching source and destination
+        const routes = await Route.find({
+            origin: { $regex: new RegExp(source, 'i') },
+            destination: { $regex: new RegExp(destination, 'i') },
+            status: 'active'
+        });
+        
+        if (routes.length === 0) {
+            return res.json({
+                success: true,
+                data: [],
+                message: 'No routes found'
+            });
+        }
+        
+        const routeIds = routes.map(r => r._id);
+        
+        // Parse travel date
+        const searchDate = new Date(travelDate);
+        const startOfDay = new Date(searchDate);
+        startOfDay.setHours(0, 0, 0, 0);
+        const endOfDay = new Date(searchDate);
+        endOfDay.setHours(23, 59, 59, 999);
+        
+        // Find buses for these routes on the given date
+        const buses = await Bus.find({
+            routeId: { $in: routeIds },
+            status: 'active',
+            departureDate: { $gte: startOfDay, $lte: endOfDay }
+        }).populate('routeId');
+        
+        if (buses.length === 0) {
+            return res.json({
+                success: true,
+                data: [],
+                message: 'No buses found for this route on the selected date'
+            });
+        }
+        
+        // Get booked seats for each bus
+        const bookings = await Booking.find({
+            busId: { $in: buses.map(b => b._id) },
+            travelDate: { $gte: startOfDay, $lte: endOfDay },
+            bookingStatus: { $in: ['confirmed', 'completed'] }
+        });
+        
+        // Create a map of booked seats by bus
+        const bookedSeatsMap = new Map();
+        bookings.forEach(booking => {
+            const busId = booking.busId.toString();
+            if (!bookedSeatsMap.has(busId)) {
+                bookedSeatsMap.set(busId, new Set());
+            }
+            if (booking.seats) {
+                booking.seats.forEach(seat => {
+                    if (seat.seatNumber) {
+                        bookedSeatsMap.get(busId).add(seat.seatNumber);
+                    }
+                });
+            }
+        });
+        
+        // Format the response
+        const busSchedules = buses.map(bus => {
+            const bookedSeats = bookedSeatsMap.get(bus._id.toString()) || new Set();
+            const availableSeats = bus.totalSeats - bookedSeats.size;
+            
+            return {
+                _id: bus._id,
+                bus: {
+                    _id: bus._id,
+                    busName: bus.busName,
+                    busNumber: bus.busNumber,
+                    totalSeats: bus.totalSeats,
+                    busType: bus.busType,
+                    amenities: bus.amenities || []
+                },
+                route: {
+                    _id: bus.routeId._id,
+                    source: bus.routeId.origin,
+                    destination: bus.routeId.destination,
+                    departureTime: bus.departureTime,
+                    arrivalTime: bus.arrivalTime,
+                    duration: bus.routeId.duration,
+                    price: bus.fare,
+                    distance: bus.routeId.distance
+                },
+                availableSeats: availableSeats,
+                travelDate: travelDate
+            };
+        });
+        
+        // Filter out buses with no available seats
+        const availableBuses = busSchedules.filter(bus => bus.availableSeats > 0);
+        
+        console.log(`✅ Found ${availableBuses.length} available buses`);
+        
+        res.json({
+            success: true,
+            data: availableBuses,
+            count: availableBuses.length
+        });
+        
+    } catch (error) {
+        console.error('❌ Error searching buses:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error searching buses',
+            error: error.message
+        });
+    }
+});
+
 // ============= TEST ROUTE (Add this at the top) =============
 router.get('/test', (req, res) => {
     console.log('✅ TEST ROUTE HIT - Booking routes are working!');

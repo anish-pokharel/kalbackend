@@ -2,98 +2,38 @@
 
 // const jwt = require('jsonwebtoken');
 
-// // Verify token middleware
-// function verifyToken(req, res, next) {
-//     if (!req.headers.authorization) {
-//         return res.status(401).json({ 
-//             success: false,
-//             message: 'Unauthorized request - No token provided' 
-//         });
-//     }
+// const verifyToken = (req, res, next) => {
+//     const token = req.headers.authorization?.split(' ')[1];
     
-//     const token = req.headers.authorization.split(' ')[1];
 //     if (!token) {
-//         return res.status(401).json({ 
+//         return res.status(401).json({
 //             success: false,
-//             message: 'Unauthorized request - Token is empty' 
+//             message: 'Access denied. No token provided.'
 //         });
 //     }
     
 //     try {
-//         const payload = jwt.verify(token, 'secretKey');
-//         req.user = payload;
+//         const decoded = jwt.verify(token, 'secretKey');
+//         req.user = decoded;
 //         next();
 //     } catch (error) {
-//         return res.status(401).json({ 
+//         return res.status(403).json({
 //             success: false,
-//             message: 'Unauthorized request - Invalid token' 
+//             message: 'Invalid or expired token.'
 //         });
 //     }
-// }
+// };
 
-// // Check if user is admin middleware
-// function isAdmin(req, res, next) {
-//     try {
-//         if (req.user && req.user.role === 'admin') {
-//             next();
-//         } else {
-//             return res.status(403).json({ 
-//                 success: false,
-//                 message: 'Access denied. Admin only.' 
-//             });
-//         }
-//     } catch (error) {
-//         return res.status(500).json({ 
+// const isAdmin = (req, res, next) => {
+//     if (req.user && req.user.role === 'admin') {
+//         next();
+//     } else {
+//         return res.status(403).json({
 //             success: false,
-//             message: 'Error checking admin status',
-//             error: error.message 
+//             message: 'Admin access required.'
 //         });
 //     }
-// }
-
-// module.exports = { verifyToken, isAdmin };
-
-
-
-
-// const jwt = require('jsonwebtoken');
-
-// // ✅ Verify Token
-// function verifyToken(req, res, next) {
-//   const authHeader = req.headers.authorization;
-
-//   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-//     return res.status(401).json({
-//       success: false,
-//       message: 'Unauthorized - No token provided',
-//     });
-//   }
-
-//   const token = authHeader.split(' ')[1];
-
-//   try {
-//     const payload = jwt.verify(token, 'secretKey');
-//     req.user = payload;
-//     next();
-//   } catch (error) {
-//     return res.status(401).json({
-//       success: false,
-//       message: 'Invalid or expired token',
-//     });
-//   }
-// }
-
-// // ✅ Admin Check
-// function isAdmin(req, res, next) {
-//   if (req.user && req.user.role === 'admin') {
-//     next();
-//   } else {
-//     return res.status(403).json({
-//       success: false,
-//       message: 'Access denied. Admin only.',
-//     });
-//   }
-// }
+// };
 
 // module.exports = { verifyToken, isAdmin };
 
@@ -112,7 +52,7 @@ const verifyToken = (req, res, next) => {
     }
     
     try {
-        const decoded = jwt.verify(token, 'secretKey');
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secretKey');
         req.user = decoded;
         next();
     } catch (error) {
@@ -134,4 +74,28 @@ const isAdmin = (req, res, next) => {
     }
 };
 
-module.exports = { verifyToken, isAdmin };
+// ADD THIS NEW MIDDLEWARE FOR COUNTER
+const isCounter = (req, res, next) => {
+    if (req.user && req.user.role === 'counter') {
+        next();
+    } else {
+        return res.status(403).json({
+            success: false,
+            message: 'Counter staff access required.'
+        });
+    }
+};
+
+// ADD THIS FOR ADMIN OR COUNTER ACCESS
+const isAdminOrCounter = (req, res, next) => {
+    if (req.user && (req.user.role === 'admin' || req.user.role === 'counter')) {
+        next();
+    } else {
+        return res.status(403).json({
+            success: false,
+            message: 'Admin or Counter staff access required.'
+        });
+    }
+};
+
+module.exports = { verifyToken, isAdmin, isCounter, isAdminOrCounter };
